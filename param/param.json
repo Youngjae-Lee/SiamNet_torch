@@ -1,0 +1,26 @@
+{
+	"ProjectName":"SiameseNet",
+	"model": "Baseline",
+
+	"total_epoch": 50,
+	"batch_size": 16,
+	"num_worker": 4,
+	"optimizer":"SGD",
+	"optim_param":{
+		"lr":1e-2,
+		"momentum":0.9
+	},
+	"cxt_margin": 0.5,
+	"lr_decay":0.00002,
+	"display_step":50,
+	"response_up": 8,
+	"ckpt_path": "output/",
+	"device": {
+		"name": "cuda",
+		"num" : "0"
+	},
+	"pos_thr": 3,
+	"neg_thr": 7,
+	"score_size": 33,
+	"corr" : "cos"
+}
