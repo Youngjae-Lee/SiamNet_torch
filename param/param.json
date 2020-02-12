@@ -14,11 +14,8 @@
 	"lr_decay":0.00002,
 	"display_step":50,
 	"response_up": 8,
+
 	"ckpt_path": "output/",
-	"device": {
-		"name": "cuda",
-		"num" : "0"
-	},
 	"pos_thr": 3,
 	"neg_thr": 7,
 	"score_size": 33,

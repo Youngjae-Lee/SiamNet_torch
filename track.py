@@ -73,7 +73,7 @@ def main(args):
             score_map = score_map.detach().cpu().permute(0, 2, 3, 1)
             scores = []
             for idx, score in enumerate(score_map):
-                scores.append(np.multiply(cv2.resize(score.numpy(), (255,255), interpolation=cv2.INTER_CUBIC), penalty)*scale_penelty[idx])
+                scores.append(np.multiply(cv2.resize(score.numpy(), (255,255), interpolation=cv2.INTER_CUBIC), penalty)*scale_penelty)
             max_idx = np.argmax(np.asarray(scores).reshape((-1, 1, 1)), axis=0)
             scale_index = max_idx // 255**2
             dy = (max_idx - scale_index*(255**2)) // 255 - 127

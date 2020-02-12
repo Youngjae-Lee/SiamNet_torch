@@ -25,7 +25,8 @@ def parse_arguments():
                         help="Visdom Port(default:8097)")
     parser.add_argument('-t', '--pre-trained', required=False, type=str, default="",
                         help="Continue to training")
-    parser.add_argument('--train-meta', required=False, type=str, default='meta/')
+    parser.add_argument('--gpus', required=True, type=str,
+                        help="GPU Number(ex: 0,1,2)")
     args = parser.parse_args()
     return args
 
@@ -116,8 +117,6 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
 
     print("End Training")
 
-
-import cv2
 def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     model.train()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
@@ -169,8 +168,14 @@ def main(args):
     param = Params(args.json_path)
     viz = visdom.Visdom(port=args.port)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device)
+    gpu_num = [int(n) for n in args.gpus.split(',')]
+    gpu_count = len(gpu_num)
+    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
     siamfc.apply(weight_init)
+    if gpu_count:
+        siamfc = nn.DataParallel(siamfc).to(gpu_num)
+    else:
+        siamfc = siamfc.to(device)
     upscale_factor = siamfc.final_score_sz / param.score_size
     dataset = ImageNetVID("D:/Dataset/ILSVRC2015_VID/ILSVRC2015",
                           lable_fcn=create_BCELogit_loss_label,
@@ -213,7 +218,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.argv += "-j ./param/param.json -p 8098 ".split(" ")
+    sys.argv += "-j ./param/param.json -p 8098 --gpus 0,1,2".split(" ")
     arg = parse_arguments()
     main(arg)
 
