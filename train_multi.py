@@ -183,7 +183,8 @@ def main(args):
     param = Params(args.json_path)
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
-    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device_num)
+    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
+    siamfc = nn.DataParallel(siamfc, device_num, 0)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
@@ -229,7 +230,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
+    sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097 -g 0,1,2".split(" ")
     arg = parse_arguments()
     main(arg)
 
