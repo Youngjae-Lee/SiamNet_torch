@@ -58,19 +58,17 @@ class ImageNetVID(Dataset):
         return len(self.list_idx)
 
     def get_metadata(self, metadata_file=None, save_metadata=None):
-        print("---------------\n\
-              -Load Meta Data({0})-\n\
-              ----------------".format(metadata_file))
         if metadata_file and isfile(metadata_file):
+            print("---------------\n-Load Meta Data({0})-\n----------------".format(metadata_file))
             with open(metadata_file) as json_file:
                 mdata = json.load(json_file)
                 if self.check_metadata(mdata):
                     for key, value in mdata.items():
                         setattr(self, key, value)
                     return
-        print("---------------\n\
-              -Load Meta Data({0})-\n\
-              ----------------".format(save_metadata))
+                else:
+                    print("Fail to load meta data at {0}".format(metadata_file))
+        print("---------------\n-Save Meta Data({0})-\n----------------".format(save_metadata))
         mdata = self.build_metadata()
         if save_metadata is not None:
             with open(save_metadata, 'w') as outfile:
