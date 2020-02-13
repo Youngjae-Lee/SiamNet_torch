@@ -182,7 +182,7 @@ def data_parallel(module, input, device_ids, output_device=None):
 def main(args):
     param = Params(args.json_path)
     viz = visdom.Visdom(port=args.port)
-    device_num = [int(num) for num in args.gpus]
+    device_num = [int(num) for num in args.gpus.split(',')]
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device_num)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.final_score_sz / param.score_size
