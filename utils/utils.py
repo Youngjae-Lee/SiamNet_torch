@@ -110,6 +110,7 @@ def check_imagenet_folder_tree(root_dir):
     data_type = ['Annotations', 'Data']
     dataset_type = ['train', 'val']
     folders = [join(root_dir, data, 'VID', dataset) for data in data_type for dataset in dataset_type]
+    print(folders)
     return all(os.path.isdir(path) for path in folders)
 
 

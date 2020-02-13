@@ -128,10 +128,10 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     viz = kwargs['viz']
     epoch = kwargs['epoch']
     for idx, sample in enumerate(progbar):
-        ref_img_batch = sample['ref'].to(device)
-        srch_img_batch = sample['srch'].to(device)
-        label_batch = sample['label'].to(device)
-        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device, 1)
+        ref_img_batch = sample['ref']
+        srch_img_batch = sample['srch']
+        label_batch = sample['label'].to(0)
+        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device, 0)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
         loss.backward()
@@ -154,10 +154,10 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
     model.eval()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
     for idx, sample in enumerate(loader):
-        ref_image = sample['ref'].to(device)
-        srch_image = sample['srch'].to(device)
-        label = sample['label'].to(device)
-        score_map = model(ref_image, srch_image)
+        ref_image = sample['ref']
+        srch_image = sample['srch']
+        label = sample['label'].to('cuda')
+        score_map = data_parallel(model, [ref_image, srch_image], device, 0)
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
