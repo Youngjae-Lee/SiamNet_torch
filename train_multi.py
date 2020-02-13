@@ -166,6 +166,7 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         torch.cuda.empty_cache()
     return avg['loss'](), avg['auc']()
 
+
 def data_parallel(module, input, device_ids, output_device=None):
     if not device_ids:
         return module(input)
@@ -178,12 +179,13 @@ def data_parallel(module, input, device_ids, output_device=None):
     outputs = nn.parallel.parallel_apply(replicas, inputs)
     return nn.parallel.gather(outputs, output_device)
 
+
 def main(args):
     param = Params(args.json_path)
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
-    siamfc = nn.DataParallel(siamfc, [0], 0)
+    siamfc = nn.DataParallel(siamfc, device_num, 0)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.module.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
