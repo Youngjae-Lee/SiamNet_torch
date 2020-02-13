@@ -19,6 +19,8 @@ from optimizer import *
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--root_dir', required=True, type=str,
+                        help="ImageNetVID root directory")
     parser.add_argument('-j', '--json-path', required=True, type=str,
                         help="Parameter Json File")
     parser.add_argument('-p', '--port', required=False, type=int, default=8097,
@@ -185,7 +187,7 @@ def main(args):
     train_loader = DataLoader(dataset=dataset, batch_size=param.batch_size,
                         shuffle=True, num_workers=param.num_worker, pin_memory=True)
 
-    eval_dataset = ImageNetVID_val("D:/Dataset/ILSVRC2015_VID/ILSVRC2015",
+    eval_dataset = ImageNetVID_val(args.root_dir,
                                   lable_fcn=create_BCELogit_loss_label,
                                   final_size=siamfc.final_score_sz,
                                   pos_thr=param.pos_thr,
@@ -213,7 +215,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.argv += "-j ./param/param.json -p 8098 ".split(" ")
     arg = parse_arguments()
     main(arg)
 
