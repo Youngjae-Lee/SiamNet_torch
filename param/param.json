@@ -3,7 +3,7 @@
 	"model": "Baseline",
 
 	"total_epoch": 50,
-	"batch_size": 16,
+	"batch_size": 32,
 	"num_worker": 4,
 	"optimizer":"SGD",
 	"optim_param":{
@@ -15,12 +15,12 @@
 	"display_step":50,
 	"response_up": 8,
 
-	"ckpt_path": "output/",
+	"ckpt_path": "./output/",
 	"pos_thr": 3,
 	"neg_thr": 7,
 	"score_size": 33,
 	"corr" : "cos",
 
-	"train_meta": "meta/training.json",
-	"valid_meta": "meta/validation.json"
+	"train_meta": "./meta/training.json",
+	"valid_meta": "./meta/validation.json"
 }

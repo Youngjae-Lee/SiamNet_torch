@@ -211,7 +211,7 @@ class SiameseNet(nn.Module):
         ref_embed = self.embedding_net(ref_image)
         srch_embed = self.embedding_net(srch_image)
         score_map = self.correl_func(ref_embed, srch_embed, self.match_batchnorm)
-        score_map = F.interpolate(score_map, self.final_score_sz, mode='bicubic', align_corners=True)
+        score_map = F.interpolate(score_map, self.final_score_sz, mode='bilinear', align_corners=True)
         return score_map
 
 
