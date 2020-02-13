@@ -5,7 +5,6 @@ import random
 import glob
 import tqdm
 import json
-import cv2
 
 import numpy as np
 from imageio import imread

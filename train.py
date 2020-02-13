@@ -119,7 +119,6 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
     print("End Training")
 
 
-import cv2
 def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     model.train()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
