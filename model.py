@@ -207,7 +207,7 @@ class SiameseNet(nn.Module):
         self.match_batchnorm = nn.BatchNorm2d(1)
         self.final_score_sz = response_up*(score_sz - 1) + 1
 
-    def forward(self, images):
+    def forward(self, *images):
         ref_embed = self.embedding_net(images[0])
         srch_embed = self.embedding_net(images[1])
         score_map = self.correl_func(ref_embed, srch_embed, self.match_batchnorm)
