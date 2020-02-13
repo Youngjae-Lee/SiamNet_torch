@@ -1,7 +1,6 @@
 import os, sys
 from os.path import join, basename, splitext
 import glob
-import cv2
 import numpy as np
 import torch
 import argparse

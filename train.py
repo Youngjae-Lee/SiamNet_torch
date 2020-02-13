@@ -173,7 +173,7 @@ def main(args):
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.final_score_sz / param.score_size
-    dataset = ImageNetVID("D:/Dataset/ILSVRC2015_VID/ILSVRC2015",
+    dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
                           final_size=siamfc.final_score_sz,
                           pos_thr=param.pos_thr,
