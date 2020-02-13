@@ -184,12 +184,12 @@ def main(args):
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
-    siamfc = nn.DataParallel(siamfc, device_num, 0)
+    siamfc = nn.DataParallel(siamfc, [0], 0)
     siamfc.apply(weight_init)
-    upscale_factor = siamfc.final_score_sz / param.score_size
+    upscale_factor = siamfc.module.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
-                          final_size=siamfc.final_score_sz,
+                          final_size=siamfc.module.final_score_sz,
                           pos_thr=param.pos_thr,
                           neg_thr=param.neg_thr,
                           metadata_file=param.train_meta,
@@ -203,7 +203,7 @@ def main(args):
 
     eval_dataset = ImageNetVID_val(args.root_dir,
                                   lable_fcn=create_BCELogit_loss_label,
-                                  final_size=siamfc.final_score_sz,
+                                  final_size=siamfc.module.final_score_sz,
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
                                   metadata_file=param.valid_meta,
