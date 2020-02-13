@@ -27,7 +27,6 @@ def parse_arguments():
                         help="Visdom Port(default:8097)")
     parser.add_argument('-t', '--pre-trained', required=False, type=str, default="",
                         help="Continue to training")
-    parser.add_argument('--train-meta', required=False, type=str, default='meta/')
     args = parser.parse_args()
     return args
 
@@ -178,7 +177,7 @@ def main(args):
                           final_size=siamfc.final_score_sz,
                           pos_thr=param.pos_thr,
                           neg_thr=param.neg_thr,
-                          metadata_file='meta/meta.json',
+                          metadata_file=param.train_meta,
                           img_read_fcn=imread,
                           resize_fcn=resize,
                           upscale_factor=upscale_factor,
@@ -191,7 +190,7 @@ def main(args):
                                   final_size=siamfc.final_score_sz,
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
-                                  metadata_file='meta/meta_val.json',
+                                  metadata_file=param.valid_meta,
                                   img_read_fcn=imread,
                                   resize_fcn=resize,
                                   upscale_factor=upscale_factor,

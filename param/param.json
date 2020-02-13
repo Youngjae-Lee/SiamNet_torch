@@ -19,5 +19,8 @@
 	"pos_thr": 3,
 	"neg_thr": 7,
 	"score_size": 33,
-	"corr" : "cos"
+	"corr" : "cos",
+
+	"train_meta": "meta/training.json",
+	"valid_meta": "meta/validation.json"
 }
