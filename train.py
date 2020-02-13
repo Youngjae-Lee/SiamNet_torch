@@ -215,6 +215,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
     arg = parse_arguments()
     main(arg)
 

@@ -19,14 +19,16 @@ from optimizer import *
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--root_dir', required=True, type=str,
+                        help="ImageNetVID root directory")
     parser.add_argument('-j', '--json-path', required=True, type=str,
                         help="Parameter Json File")
     parser.add_argument('-p', '--port', required=False, type=int, default=8097,
                         help="Visdom Port(default:8097)")
     parser.add_argument('-t', '--pre-trained', required=False, type=str, default="",
                         help="Continue to training")
-    parser.add_argument('--gpus', required=True, type=str,
-                        help="GPU Number(ex: 0,1,2)")
+    parser.add_argument('-g', '--gpus', required=False, default='0', type=str,
+                        help="GPU Number")
     args = parser.parse_args()
     return args
 
@@ -117,6 +119,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
 
     print("End Training")
 
+
 def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     model.train()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
@@ -128,7 +131,7 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
         ref_img_batch = sample['ref'].to(device)
         srch_img_batch = sample['srch'].to(device)
         label_batch = sample['label'].to(device)
-        score_map = model(ref_img_batch, srch_img_batch)
+        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device, 1)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
         loss.backward()
@@ -163,39 +166,47 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         torch.cuda.empty_cache()
     return avg['loss'](), avg['auc']()
 
+def data_parallel(module, input, device_ids, output_device=None):
+    if not device_ids:
+        return module(input)
+
+    if output_device is None:
+        output_device = device_ids[0]
+
+    replicas = nn.parallel.replicate(module, device_ids)
+    inputs = nn.parallel.scatter(input, device_ids)
+    replicas = replicas[:len(inputs)]
+    outputs = nn.parallel.parallel_apply(replicas, inputs)
+    return nn.parallel.gather(outputs, output_device)
 
 def main(args):
     param = Params(args.json_path)
     viz = visdom.Visdom(port=args.port)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    gpu_num = [int(n) for n in args.gpus.split(',')]
-    gpu_count = len(gpu_num)
-    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
+    device_num = [int(num) for num in args.gpus]
+    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device_num)
     siamfc.apply(weight_init)
-    if gpu_count:
-        siamfc = nn.DataParallel(siamfc).to(gpu_num)
-    else:
-        siamfc = siamfc.to(device)
     upscale_factor = siamfc.final_score_sz / param.score_size
-    dataset = ImageNetVID("D:/Dataset/ILSVRC2015_VID/ILSVRC2015",
+    dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
                           final_size=siamfc.final_score_sz,
                           pos_thr=param.pos_thr,
                           neg_thr=param.neg_thr,
-                          metadata_file='meta/meta.json',
+                          metadata_file=param.train_meta,
                           img_read_fcn=imread,
                           resize_fcn=resize,
                           upscale_factor=upscale_factor,
-                          cxt_margin=param.cxt_margin)
+                          cxt_margin=param.cxt_margin,
+                          save_metadata=param.train_meta)
     train_loader = DataLoader(dataset=dataset, batch_size=param.batch_size,
                         shuffle=True, num_workers=param.num_worker, pin_memory=True)
 
-    eval_dataset = ImageNetVID_val("D:/Dataset/ILSVRC2015_VID/ILSVRC2015",
+    eval_dataset = ImageNetVID_val(args.root_dir,
                                   lable_fcn=create_BCELogit_loss_label,
                                   final_size=siamfc.final_score_sz,
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
-                                  metadata_file='meta/meta_val.json',
+                                  metadata_file=param.valid_meta,
+                                   save_metadata=param.valid_meta,
                                   img_read_fcn=imread,
                                   resize_fcn=resize,
                                   upscale_factor=upscale_factor,
@@ -214,11 +225,11 @@ def main(args):
 
     train_and_evaluate(siamfc, train_loader, eval_loader, optim, loss_func, scheduler, metrics,
                        total_epoch=param.total_epoch, start_epoch=param.start,
-                       param=param, device=device, viz=viz)
+                       param=param, device=device_num, viz=viz)
 
 
 if __name__ == '__main__':
-    sys.argv += "-j ./param/param.json -p 8098 --gpus 0,1,2".split(" ")
+    sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
     arg = parse_arguments()
     main(arg)
 
