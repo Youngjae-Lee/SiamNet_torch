@@ -181,7 +181,8 @@ def main(args):
                           img_read_fcn=imread,
                           resize_fcn=resize,
                           upscale_factor=upscale_factor,
-                          cxt_margin=param.cxt_margin)
+                          cxt_margin=param.cxt_margin,
+                          save_metadata=param.train_meta)
     train_loader = DataLoader(dataset=dataset, batch_size=param.batch_size,
                         shuffle=True, num_workers=param.num_worker, pin_memory=True)
 
@@ -191,6 +192,7 @@ def main(args):
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
                                   metadata_file=param.valid_meta,
+                                   save_metadata=param.valid_meta,
                                   img_read_fcn=imread,
                                   resize_fcn=resize,
                                   upscale_factor=upscale_factor,
