@@ -172,7 +172,6 @@ def data_parallel(module, input, device_ids, output_device=None):
 
     if output_device is None:
         output_device = device_ids[0]
-
     replicas = nn.parallel.replicate(module, device_ids)
     inputs = nn.parallel.scatter(input, device_ids)
     replicas = replicas[:len(inputs)]
