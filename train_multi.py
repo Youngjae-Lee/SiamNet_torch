@@ -173,7 +173,7 @@ def data_parallel(module, input, device_ids, output_device=None):
 
     if output_device is None:
         output_device = device_ids[0]
-    replicas = nn.parallel.replicate(module, device_ids)
+    replicas = nn.parallel.replicate(module, device_ids) 
     inputs = nn.parallel.scatter(input, device_ids)
     replicas = replicas[:len(inputs)]
     outputs = nn.parallel.parallel_apply(replicas, inputs)
@@ -185,8 +185,10 @@ def main(args):
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
-    siamfc = nn.DataParallel(siamfc, device_num, 0)
     siamfc.apply(weight_init)
+    print("Using GPU is {0}\n".format(device_num))
+    siamfc = nn.DataParallel(siamfc.cuda(),device_ids=device_num, output_device=device_num[0])
+    print(siamfc.device_ids)
     upscale_factor = siamfc.module.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
@@ -203,7 +205,7 @@ def main(args):
                         shuffle=True, num_workers=param.num_worker, pin_memory=True)
 
     eval_dataset = ImageNetVID_val(args.root_dir,
-                                  lable_fcn=create_BCELogit_loss_label,
+                             lable_fcn=create_BCELogit_loss_label,
                                   final_size=siamfc.module.final_score_sz,
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
