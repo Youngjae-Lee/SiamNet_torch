@@ -21,9 +21,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--root_dir', required=True, type=str,
                         help="ImageNetVID root directory")
-    parser.add_argument('-j', '--json-path', required=True, type=str,
+    parser.add_argument('-p', '--param-path', required=True, type=str,
                         help="Parameter Json File")
-    parser.add_argument('-p', '--port', required=False, type=int, default=8097,
+    parser.add_argument('--port', required=False, type=int, default=8097,
                         help="Visdom Port(default:8097)")
     parser.add_argument('-t', '--pre-trained', required=False, type=str, default="",
                         help="Continue to training")
@@ -166,7 +166,7 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
 
 
 def main(args):
-    param = Params(args.json_path)
+    param = Params(args.param_path)
     viz = visdom.Visdom(port=args.port)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device)
@@ -215,7 +215,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    # sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
     arg = parse_arguments()
     main(arg)
 

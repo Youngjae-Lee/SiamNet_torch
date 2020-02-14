@@ -21,9 +21,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--root_dir', required=True, type=str,
                         help="ImageNetVID root directory")
-    parser.add_argument('-j', '--json-path', required=True, type=str,
+    parser.add_argument('-p', '--param-path', required=True, type=str,
                         help="Parameter Json File")
-    parser.add_argument('-p', '--port', required=False, type=int, default=8097,
+    parser.add_argument('--port', required=False, type=int, default=8097,
                         help="Visdom Port(default:8097)")
     parser.add_argument('-t', '--pre-trained', required=False, type=str, default="",
                         help="Continue to training")
@@ -68,8 +68,6 @@ def plot_2d_line(vals, iter, epoch, type='train', kinds='loss', viz=None):
     x_axis = (iter+1)*(epoch+1)
     win_name = "{0}_{1}".format(type, kinds)
     viz.line(X=np.array([x_axis]), Y=np.array([vals]), win=win_name, update='append', opts=dict(title=win_name))
-
-
 
 def plot_score_n(viz, drw_data, win=None):
     it_idx = drw_data['iter']
@@ -182,11 +180,12 @@ def data_parallel(module, input, device_ids, output_device=None):
 
 
 def main(args):
-    param = Params(args.json_path)
+    param = Params(args.param_path)
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
-    siamfc = nn.DataParallel(siamfc, device_num, 0)
+    siamfc = nn.DataParallel(siamfc, device_num)
+    print(siamfc.src_device_obj)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.module.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
