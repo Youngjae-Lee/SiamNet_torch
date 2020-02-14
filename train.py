@@ -111,7 +111,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
             "scheduler": sched.state_dict(),
             "epoch": epoch}
         )
-        save_model(path_to_save=params.chpt_path, save_params=save_data)
+        save_model(path_to_save=params.ckpt_path, save_params=save_data)
         if eval_loader is not None:
             evaluate(model, eval_loader, loss_func, metrics, epoch=epoch)
 
@@ -215,7 +215,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
+    # sys.argv += "-r D:\Dataset\ILSVRC2015_VID\ILSVRC2015 -j ./param/param.json -p 8097".split(" ")
     arg = parse_arguments()
     main(arg)
 

@@ -113,7 +113,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
             "scheduler": sched.state_dict(),
             "epoch": epoch}
         )
-        save_model(path_to_save=params.chpt_path, save_params=save_data)
+        save_model(path_to_save=params.ckpt_path, save_params=save_data)
         if eval_loader is not None:
             evaluate(model, eval_loader, loss_func, metrics, epoch=epoch)
 
@@ -178,6 +178,7 @@ def data_parallel(module, input, device_ids, output_device=None):
     replicas = replicas[:len(inputs)]
     outputs = nn.parallel.parallel_apply(replicas, inputs)
     return nn.parallel.gather(outputs, output_device)
+
 
 
 def main(args):
