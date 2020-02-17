@@ -3,7 +3,7 @@
 	"model": "Baseline",
 
 	"total_epoch": 50,
-	"batch_size": 32,
+	"batch_size": 72,
 	"num_worker": 8,
 	"optimizer":"SGD",
 	"optim_param":{
