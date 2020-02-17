@@ -124,10 +124,10 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     viz = kwargs['viz']
     epoch = kwargs['epoch']
     for idx, sample in enumerate(progbar):
-        ref_img_batch = sample['ref']
-        srch_img_batch = sample['srch']
-        label_batch = sample['label'].to('cuda')
-        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device)
+        ref_img_batch = sample['ref'].to(device)
+        srch_img_batch = sample['srch'].to(device)
+        label_batch = sample['label'].to(device)
+        score_map = model(ref_img_batch, srch_img_batch)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
         loss.backward()
@@ -150,10 +150,10 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
     model.eval()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
     for idx, sample in enumerate(loader):
-        ref_image = sample['ref']
-        srch_image = sample['srch']
-        label = sample['label'].to('cuda')
-        score_map = data_parallel(model, [ref_image, srch_image], device)
+        ref_image = sample['ref'].to(device)
+        srch_image = sample['srch'].to(device)
+        label = sample['label'].to(device)
+        score_map = model(ref_image, srch_image)
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
@@ -162,34 +162,19 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         torch.cuda.empty_cache()
     return avg['loss'](), avg['auc']()
 
-
-def data_parallel(module, input, device_ids, output_device=None):
-    if not device_ids:
-        return module(input)
-
-    if output_device is None:
-        output_device = device_ids[0]
-    replicas = nn.parallel.replicate(module, device_ids)   
-    inputs = nn.parallel.scatter(input, device_ids)
-    replicas = replicas[:len(inputs)]
-    outputs = nn.parallel.parallel_apply(replicas, inputs)
-    return nn.parallel.gather(outputs, output_device)
-
-
-
 def main(args):
     param = Params(args.param_path)
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
-    if len(device_num)==1:
-        torch.cuda.set_device(int(args.gpus))
+    device = 'cuda' if torch.cuda.is_available() and len(device_num) >= 1 else 'cpu'
+    if len(device_num)>=1:
+        torch.cuda.set_device(device_num[0])
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
     final_score_sz = siamfc.final_score_sz
     siamfc.apply(weight_init)
-    device = torch.device(device_num[0])
     print("Using GPU is {0}\n and".format(device_num), device)
-    siamfc = nn.DataParallel(siamfc.to(device),device_ids=device_num, output_device=device_num[0]) 
-    upscale_factor =final_score_sz / param.score_size
+    siamfc = nn.DataParallel(siamfc.to(device), device_ids=device_num).to(device)
+    upscale_factor = final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
                           final_size=final_score_sz,
@@ -229,14 +214,9 @@ def main(args):
 
     train_and_evaluate(siamfc, train_loader, eval_loader, optim, loss_func, scheduler, metrics,
                        total_epoch=param.total_epoch, start_epoch=param.start,
-                       param=param, device=device_num, viz=viz)
+                       param=param, device=device, viz=viz)
 
 
 if __name__ == '__main__':
     arg = parse_arguments()
     main(arg)
-
-
-
-
-
