@@ -52,7 +52,6 @@ def remove_moudule(model_dict):
 def main(args):
     param = dict(scale_num=3, scale_step=1.04, window_influence=0.35, response_up=8,
                  scale_min=0.2, scale_max=5, final_score_sz=255)
-
     assert check_imagenet_folder_tree(args.path), "Check ImageNetVID Folder"
     if args.gpu:
         device = 'cuda'
