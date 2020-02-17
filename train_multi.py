@@ -124,8 +124,8 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     viz = kwargs['viz']
     epoch = kwargs['epoch']
     for idx, sample in enumerate(progbar):
-        ref_img_batch = sample['ref'].to(device)
-        srch_img_batch = sample['srch'].to(device)
+        ref_img_batch = sample['ref'].to('cuda')
+        srch_img_batch = sample['srch'].to('cuda')
         label_batch = sample['label'].to('cuda')
 #        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device)
         score_map = model([ref_img_batch, srch_img_batch])
