@@ -12,6 +12,10 @@ from model import *
 from utils.image_utils import *
 from utils.utils import *
 
+import cv2
+
+from collections import OrderedDict
+
 iscuda = torch.cuda.is_available()
 
 
@@ -37,23 +41,31 @@ def parse_arguments():
     return args
 
 
+def remove_moudule(model_dict):
+    ret = OrderedDict()
+    for k, v in model_dict.items():
+        name = k[7:]
+        ret[name] = v
+    return ret
+
+
 def main(args):
-    param = dict(scale_num=3, scale_step=1.04, window_influence=0.25, response_up=8,
-                 scale_min=0.2, scale_max=5)
+    param = dict(scale_num=3, scale_step=1.04, window_influence=0.35, response_up=8,
+                 scale_min=0.2, scale_max=5, final_score_sz=255)
 
     assert check_imagenet_folder_tree(args.path), "Check ImageNetVID Folder"
-    embedding_net = Baseline()
     if args.gpu:
         device = 'cuda'
     else:
         device = 'cpu'
-    siamfc = SiameseNet(embedding_net, 'cos').to(device)
-    loaded_dict = torch.load(args.weight)
-    # siamnet.load_state_dict(loaded_dict['model'])
+    siamfc = SiameseNet(Baseline(), 'cos', param['final_score_sz'], param['response_up']).to(device)
+    loaded_dict = torch.load(args.weight, map_location={'cuda:2': 'cuda:0'})
+    model_dict = remove_moudule(loaded_dict['model'])
+    siamfc.load_state_dict(model_dict)
     image_dir = join(args.path, 'Data', 'VID', 'val')
     annot_dir = join(args.path, 'Annotations', 'VID', 'val')
     seq_list = get_seq_list(args.path)
-    scale_factor = param['scale_step']**(np.linspace(-np.ceil(param['scale_num']/2)), np.ceil(param['scale_num']/2), param['scale_num'])
+    scale_factor = param['scale_step']**(np.linspace(-np.ceil(param['scale_num']/2), np.ceil(param['scale_num']/2), param['scale_num']))
     scale_penalty = 0.97
     hann_1d = np.expand_dims(np.hanning(255), axis=0)
     penalty = np.transpose(hann_1d) * hann_1d
@@ -72,23 +84,22 @@ def main(args):
             score_map = score_map.detach().cpu().permute(0, 2, 3, 1)
             scores = []
             for idx, score in enumerate(score_map):
-                scores.append(np.multiply(cv2.resize(score.numpy(), (255,255), interpolation=cv2.INTER_CUBIC), penalty)*scale_penelty)
+                scores.append(np.multiply(cv2.resize(score.numpy(), (255, 255), interpolation=cv2.INTER_CUBIC), penalty)*scale_penalty)
             max_idx = np.argmax(np.asarray(scores).reshape((-1, 1, 1)), axis=0)
             scale_index = max_idx // 255**2
             dy = (max_idx - scale_index*(255**2)) // 255 - 127
             dx = (max_idx - scale_index*(255**2)) % 255 - 127
             avg_scale.update(float(scale_factor[scale_index]))
-            bbox = update_bbox(bbox, int(dy), int(dx), avg_scale())
+            bbox = update_bbox(bbox, int(dy), int(dx), avg_scale(), param['window_influence'])
             key_val = show_image(srch_origin, bbox)
             if key_val == 27:
                 break
 
 
 def show_image(image, bbox):
-    #image has to convert bgr layer
     image = cv2.cvtColor(np.uint8(image), cv2.COLOR_RGB2BGR)
     cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (0,0,255), 1)
-    # cv2.circle(image, (bbox[0] + bbox[2]//2, bbox[1] + bbox[3]//2), 2, (0,0,255),2)
+
     cv2.imshow("show", image)
     return cv2.waitKey(1)
 
@@ -100,12 +111,12 @@ def show_patch(image, bbox):
     cv2.waitKey(10)
 
 
-def update_bbox(bbox, dy, dx, scale):
+def update_bbox(bbox, dy, dx, scale, influence):
     bbox[0] = int(round(bbox[0] + dx*scale))
     bbox[1] = int(round(bbox[1] + dy*scale))
 
-    bbox[2] = int(round(bbox[2]*scale))
-    bbox[3] = int(round(bbox[3]*scale))
+    bbox[2] = int(bbox[2]*(1-influence)) + int(bbox[2]*scale*influence)
+    bbox[3] = int(bbox[3]*(1-influence)) + int(bbox[3]*scale*influence)
     return bbox
 
 
@@ -159,6 +170,6 @@ def get_srch_image(image_path, seq_path, image_dir, annot_dir,bbox, ref_cxt_size
 
 
 if __name__ == '__main__':
-   sys.argv += '-p D:/Dataset/ILSVRC2015_VID/ILSVRC2015 -w output/0003.pt -g True'.split(' ')
+   sys.argv += '-p D:/Dataset/ILSVRC2015_VID/ILSVRC2015 -w output/0000.pt -g True'.split(' ')
    args = parse_arguments()
    main(args)
