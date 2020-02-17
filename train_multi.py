@@ -127,7 +127,6 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
         ref_img_batch = sample['ref'].to('cuda')
         srch_img_batch = sample['srch'].to('cuda')
         label_batch = sample['label'].to('cuda')
-#        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device)
         score_map = model(ref_img_batch, srch_img_batch)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
@@ -151,10 +150,10 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
     model.eval()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
     for idx, sample in enumerate(loader):
-        ref_image = sample['ref']
-        srch_image = sample['srch']
+        ref_image = sample['ref'].to('cuda')
+        srch_image = sample['srch'].to('cuda')
         label = sample['label'].to('cuda')
-        score_map = data_parallel(model, [ref_image, srch_image], device)
+        score_map = model(ref_image, srch_image)
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
