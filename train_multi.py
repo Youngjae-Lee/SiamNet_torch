@@ -128,7 +128,7 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
         srch_img_batch = sample['srch'].to('cuda')
         label_batch = sample['label'].to('cuda')
 #        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device)
-        score_map = model([ref_img_batch, srch_img_batch])
+        score_map = model(ref_img_batch, srch_img_batch)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
         loss.backward()
