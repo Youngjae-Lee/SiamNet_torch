@@ -4,11 +4,7 @@
 
 	"total_epoch": 50,
 	"batch_size": 32,
-<<<<<<< HEAD
-	"num_worker": 6,
-=======
 	"num_worker": 8,
->>>>>>> 20a8016e724147e8117d8362a6031e0148081a8f
 	"optimizer":"SGD",
 	"optim_param":{
 		"lr":1e-2,

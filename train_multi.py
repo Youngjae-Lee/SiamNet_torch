@@ -101,9 +101,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
 
     save_data = dict(model=model.state_dict(), optim=optim.state_dict(), scheduler=sched.state_dict(), epoch=0)
     for epoch in tqdm(range(start, end)):
-        train(model, train_loader, optim, loss_func, metrics,
-              epoch=epoch, device=device, viz=viz, display_step=params.display_step)
-        # save_model()
+        train(model, train_loader, optim, loss_func, metrics, epoch=epoch, device=device, viz=viz, display_step=params.display_step)
         sched.step()
         save_data.update(
             {"model": model.state_dict(),
@@ -113,7 +111,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
         )
         save_model(path_to_save=params.ckpt_path, save_params=save_data)
         if eval_loader is not None:
-            evaluate(model, eval_loader, loss_func, metrics, epoch=epoch)
+            evaluate(model, eval_loader, loss_func, metrics, device, epoch=epoch)
 
     print("End Training")
 
@@ -128,8 +126,8 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
     for idx, sample in enumerate(progbar):
         ref_img_batch = sample['ref']
         srch_img_batch = sample['srch']
-        label_batch = sample['label'].to(0)
-        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device, 0)
+        label_batch = sample['label'].to('cuda')
+        score_map = data_parallel(model, [ref_img_batch, srch_img_batch], device)
         loss = loss_func(score_map=score_map, labels=label_batch)
         optim.zero_grad()
         loss.backward()
@@ -155,7 +153,7 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         ref_image = sample['ref']
         srch_image = sample['srch']
         label = sample['label'].to('cuda')
-        score_map = data_parallel(model, [ref_image, srch_image], device, 0)
+        score_map = data_parallel(model, [ref_image, srch_image], device)
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
@@ -171,7 +169,7 @@ def data_parallel(module, input, device_ids, output_device=None):
 
     if output_device is None:
         output_device = device_ids[0]
-    replicas = nn.parallel.replicate(module, device_ids) 
+    replicas = nn.parallel.replicate(module, device_ids)   
     inputs = nn.parallel.scatter(input, device_ids)
     replicas = replicas[:len(inputs)]
     outputs = nn.parallel.parallel_apply(replicas, inputs)
@@ -183,20 +181,18 @@ def main(args):
     param = Params(args.param_path)
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
+    if len(device_num)==1:
+        torch.cuda.set_device(int(args.gpus))
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
-<<<<<<< HEAD
-=======
-    siamfc = nn.DataParallel(siamfc, device_num)
-    print(siamfc.src_device_obj)
->>>>>>> 20a8016e724147e8117d8362a6031e0148081a8f
+    final_score_sz = siamfc.final_score_sz
     siamfc.apply(weight_init)
-    print("Using GPU is {0}\n".format(device_num))
-    siamfc = nn.DataParallel(siamfc.cuda(),device_ids=device_num, output_device=device_num[0])
-    print(siamfc.device_ids)
-    upscale_factor = siamfc.module.final_score_sz / param.score_size
+    device = torch.device(device_num[0])
+    print("Using GPU is {0}\n and".format(device_num), device)
+    siamfc = nn.DataParallel(siamfc.to(device),device_ids=device_num, output_device=device_num[0]) 
+    upscale_factor =final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
                           lable_fcn=create_BCELogit_loss_label,
-                          final_size=siamfc.module.final_score_sz,
+                          final_size=final_score_sz,
                           pos_thr=param.pos_thr,
                           neg_thr=param.neg_thr,
                           metadata_file=param.train_meta,
@@ -210,7 +206,7 @@ def main(args):
 
     eval_dataset = ImageNetVID_val(args.root_dir,
                              lable_fcn=create_BCELogit_loss_label,
-                                  final_size=siamfc.module.final_score_sz,
+                                  final_size=final_score_sz,
                                   pos_thr=param.pos_thr,
                                   neg_thr=param.neg_thr,
                                   metadata_file=param.valid_meta,
