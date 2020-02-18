@@ -147,15 +147,6 @@ def cosine_similarity(ref, srch, batchnorm=None):
     score_map = F.conv2d(srch_view, ref, groups=b)
     score_map = score_map.permute(1, 0, 2, 3)
 
-    # one_vector = torch.ones_like(ref, dtype=torch.float32, requires_grad=False)
-    # sum_vec = F.conv2d(torch.pow(srch_view, 2), one_vector, groups=b, )
-    # sum_vec = sum_vec.permute(1, 0, 2, 3)
-    #
-    # sqrt_A = torch.sqrt(torch.sum(torch.pow(ref, 2), dim=[1,2,3], keepdim=True))
-    # sqrt_B = torch.sqrt(sum_vec)
-    # sqrt_A = sqrt_A.expand_as(sqrt_B)
-    # score_map = score_map / (sqrt_A*sqrt_B)
-
     if batchnorm is not None:
         score_map = batchnorm(score_map)
     return score_map
