@@ -124,16 +124,7 @@ def save_model(path_to_save, save_params):
     torch.save(save_params, model_output)
 
 
-def remove_moudule(model_dict):
-    ret = OrderedDict()
-    for k, v in model_dict.items():
-        name = k[7:]
-        ret[name] = v
-        return ret
-
-
-def load_model(path_to_load, model, optim, scheduler, param):
-    ckpt_path = path_to_load
+def load_model(ckpt_path, model, optim, scheduler, param):
     try:
         dict = torch.load(ckpt_path)
     except FileNotFoundError:
