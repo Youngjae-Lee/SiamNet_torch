@@ -6,6 +6,7 @@ import json
 import torch
 import torch.nn.functional as F
 import time
+from collections import OrderedDict
 
 
 class RunningAverage(object):
@@ -129,7 +130,10 @@ def load_model(ckpt_path, model, optim, scheduler, param):
     except FileNotFoundError:
         print("That file not exit")
         return
-    model.load_state_dict(dict['model'])
+    try:
+       model.load_state_dict(dict['model'])
+    except AttributeError:
+        model.load_state_dict(remove_moudule(dict['model']))
     scheduler.load_state_dict(dict['scheduler'])
     optim.load_state_dict(dict['optim'])
     param.start_epoch = dict['epoch']

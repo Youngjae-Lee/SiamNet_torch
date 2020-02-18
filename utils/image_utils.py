@@ -1,7 +1,7 @@
 import numpy as np
 import PIL
 from PIL import Image
-from math import floor
+from math import floor, sqrt
 
 
 PIL_FLAGS = {'bilinear':PIL.Image.BILINEAR, 'bicubic':PIL.Image.BICUBIC, 'nearest':PIL.Image.NEAREST}
