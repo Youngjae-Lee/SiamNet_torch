@@ -6,6 +6,7 @@ import json
 import torch
 import torch.nn.functional as F
 import time
+from collections import OrderedDict
 
 
 class RunningAverage(object):
@@ -123,14 +124,25 @@ def save_model(path_to_save, save_params):
     torch.save(save_params, model_output)
 
 
+def remove_moudule(model_dict):
+    ret = OrderedDict()
+    for k, v in model_dict.items():
+        name = k[7:]
+        ret[name] = v
+        return ret
+
+
 def load_model(path_to_load, model, optim, scheduler, param):
-    ckpt_path = path_to_load + ".pt"
+    ckpt_path = path_to_load
     try:
         dict = torch.load(ckpt_path)
     except FileNotFoundError:
         print("That file not exit")
         return
-    model.load_state_dict(dict['model'])
+    try:
+       model.load_state_dict(dict['model'])
+    except AttributeError:
+        model.load_state_dict(remove_moudule(dict['model']))
     scheduler.load_state_dict(dict['scheduler'])
     optim.load_state_dict(dict['optim'])
     param.start_epoch = dict['epoch']

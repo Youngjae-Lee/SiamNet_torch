@@ -11,7 +11,7 @@
 		"momentum":0.9
 	},
 	"cxt_margin": 0.5,
-	"lr_decay":0.00002,
+	"lr_decay":0.870964,
 	"display_step":50,
 	"response_up": 8,
 

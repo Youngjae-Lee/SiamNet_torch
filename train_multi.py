@@ -44,49 +44,10 @@ def display_images(ref, srch, score_map, label,type='train', viz=None):
     viz.heatmap(label[:, :, 1], 'neg_label', opts=opts)
 
 
-def plot_score(viz, drw_data, win=None):
-    it_idx = drw_data['iter']
-    epoch = drw_data['epoch']
-    it = (it_idx+1)*(epoch+1)
-
-    if win is not None:
-        win = viz.line(
-            X=np.array([it]), Y=np.array([drw_data['loss']]),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win, update='append'
-        )
-    else:
-        win = viz.line(
-            X=np.array([it]), Y=np.array([drw_data['loss']]),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win
-        )
-    return win
-
-
-def plot_2d_line(vals, iter, epoch, type='train', kinds='loss', viz=None):
-    x_axis = (iter+1)*(epoch+1)
+def plot_2d_line(vals, iter, epoch, total_batch_per_epoch, type='train', kinds='loss', viz=None):
+    x_axis = epoch*total_batch_per_epoch + iter
     win_name = "{0}_{1}".format(type, kinds)
     viz.line(X=np.array([x_axis]), Y=np.array([vals]), win=win_name, update='append', opts=dict(title=win_name))
-
-def plot_score_n(viz, drw_data, win=None):
-    it_idx = drw_data['iter']
-    epoch = drw_data['epoch']
-    it = (np.array(it_idx)+1)*(epoch+1)
-
-    if win is not None:
-        win = viz.line(
-            X=np.array(it), Y=np.array(drw_data['loss']),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win, update='append'
-        )
-    else:
-        win = viz.line(
-            X=np.array(it), Y=np.array(drw_data['loss']),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win
-        )
-    return win
 
 
 def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched, metrics, **kwargs):
@@ -167,7 +128,7 @@ def main(args):
     viz = visdom.Visdom(port=args.port)
     device_num = [int(num) for num in args.gpus.split(',')]
     device = 'cuda' if torch.cuda.is_available() and len(device_num) >= 1 else 'cpu'
-    if len(device_num)>=1:
+    if len(device_num) >= 1:
         torch.cuda.set_device(device_num[0])
     siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
     final_score_sz = siamfc.final_score_sz
