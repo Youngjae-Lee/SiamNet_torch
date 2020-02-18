@@ -65,9 +65,10 @@ def plot_score(viz, drw_data, win=None):
 
 
 def plot_2d_line(vals, iter, epoch, type='train', kinds='loss', viz=None):
-    x_axis = (iter+1)*(epoch+1)
-    win_name = "{0}_{1}".format(type, kinds)
-    viz.line(X=np.array([x_axis]), Y=np.array([vals]), win=win_name, update='append', opts=dict(title=win_name))
+    if viz is not None:
+        x_axis = (iter+1)*(epoch+1)
+        win_name = "{0}_{1}".format(type, kinds)
+        viz.line(X=np.array([x_axis]), Y=np.array([vals]), win=win_name, update='append', opts=dict(title=win_name))
 
 def plot_score_n(viz, drw_data, win=None):
     it_idx = drw_data['iter']
@@ -100,7 +101,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
         viz = None
 
     save_data = dict(model=model.state_dict(), optim=optim.state_dict(), scheduler=sched.state_dict(), epoch=0)
-    for epoch in tqdm(range(start, end)):
+    for epoch in tqdm(range(start, end), initial=start):
         train(model, train_loader, optim, loss_func, metrics, epoch=epoch, device=device, viz=viz, display_step=params.display_step)
         sched.step()
         save_data.update(
@@ -111,7 +112,7 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
         )
         save_model(path_to_save=params.ckpt_path, save_params=save_data)
         if eval_loader is not None:
-            evaluate(model, eval_loader, loss_func, metrics, device, epoch=epoch)
+            evaluate(model, eval_loader, loss_func, metrics, device, epoch=epoch, viz=viz)
 
     print("End Training")
 
@@ -149,7 +150,9 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
     epoch = kwargs['epoch']
     model.eval()
     avg = RunningAverageMultiVar(loss=RunningAverage(), auc=RunningAverage())
-    for idx, sample in enumerate(loader):
+    viz = kwargs['viz']
+    progbar = tqdm(loader)
+    for idx, sample in enumerate(progbar):
         ref_image = sample['ref'].to(device)
         srch_image = sample['srch'].to(device)
         label = sample['label'].to(device)
@@ -157,8 +160,9 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
-        plot_2d_line(avg['loss'](), idx, epoch, 'eval', 'loss')
-        plot_2d_line(avg['auc'](), idx, epoch, 'eval', 'auc')
+        plot_2d_line(avg['loss'](), idx, epoch, 'eval', 'loss', viz)
+        plot_2d_line(avg['auc'](), idx, epoch, 'eval', 'auc', viz)
+        progbar.set_postfix({"Loss": "%0.4f"%avg['loss'](), "AUC Score": "%0.3f"%avg['auc']()})
         torch.cuda.empty_cache()
     return avg['loss'](), avg['auc']()
 
@@ -208,6 +212,7 @@ def main(args):
     param.update_with_dict({'start': 0})
     if args.pre_trained !="":
         siamfc, optim, scheduler = load_model(args.pre_trained, siamfc, optim, scheduler, param)
+        print(siamfc, optim, scheduler)
         print("Training Resume\n")
     loss_func = BCELogit_Loss
     metrics = AUC

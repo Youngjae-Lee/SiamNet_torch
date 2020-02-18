@@ -123,8 +123,7 @@ def save_model(path_to_save, save_params):
     torch.save(save_params, model_output)
 
 
-def load_model(path_to_load, model, optim, scheduler, param):
-    ckpt_path = path_to_load + ".pt"
+def load_model(ckpt_path, model, optim, scheduler, param):
     try:
         dict = torch.load(ckpt_path)
     except FileNotFoundError:

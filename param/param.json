@@ -11,13 +11,13 @@
 		"momentum":0.9
 	},
 	"cxt_margin": 0.5,
-	"lr_decay":0.00002,
+	"lr_decay":0.870964,
 	"display_step":50,
 	"response_up": 8,
 
 	"ckpt_path": "./output/",
-	"pos_thr": 3,
-	"neg_thr": 7,
+	"pos_thr": 7,
+	"neg_thr": 13,
 	"score_size": 33,
 	"corr" : "cos",
 
