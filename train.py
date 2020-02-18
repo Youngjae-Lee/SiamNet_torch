@@ -42,51 +42,10 @@ def display_images(ref, srch, score_map, label,type='train', viz=None):
     viz.heatmap(label[:, :, 1], 'neg_label', opts=opts)
 
 
-def plot_score(viz, drw_data, win=None):
-    it_idx = drw_data['iter']
-    epoch = drw_data['epoch']
-    it = (it_idx+1)*(epoch+1)
-
-    if win is not None:
-        win = viz.line(
-            X=np.array([it]), Y=np.array([drw_data['loss']]),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win, update='append'
-        )
-    else:
-        win = viz.line(
-            X=np.array([it]), Y=np.array([drw_data['loss']]),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win
-        )
-    return win
-
-
-def plot_2d_line(vals, iter, epoch, type='train', kinds='loss', viz=None):
-    x_axis = (iter+1)*(epoch+1)
+def plot_2d_line(vals, iter, epoch, total_batch_per_epoch, type='train', kinds='loss', viz=None):
+    x_axis = epoch*total_batch_per_epoch + iter
     win_name = "{0}_{1}".format(type, kinds)
     viz.line(X=np.array([x_axis]), Y=np.array([vals]), win=win_name, update='append', opts=dict(title=win_name))
-
-
-
-def plot_score_n(viz, drw_data, win=None):
-    it_idx = drw_data['iter']
-    epoch = drw_data['epoch']
-    it = (np.array(it_idx)+1)*(epoch+1)
-
-    if win is not None:
-        win = viz.line(
-            X=np.array(it), Y=np.array(drw_data['loss']),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win, update='append'
-        )
-    else:
-        win = viz.line(
-            X=np.array(it), Y=np.array(drw_data['loss']),
-            opts=dict(title='{}'.format(drw_data['win_title'])),
-            win=win
-        )
-    return win
 
 
 def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched, metrics, **kwargs):
@@ -139,8 +98,8 @@ def train(model, loader, optim, loss_func, metrics, device, **kwargs):
             display_images(sample['ref'][0], sample['srch'][0], score_map.to('cpu')[0], sample['label'][0], viz=viz)
         auc_val = metrics(score_map.detach().cpu().numpy(), label_batch.detach().cpu().numpy())
         avg.update(loss=loss_val, auc=auc_val)
-        plot_2d_line(loss_val, idx, epoch, type='train', kinds='loss', viz=viz)
-        plot_2d_line(auc_val, idx, epoch, type='train', kinds='auc', viz=viz)
+        plot_2d_line(loss_val, idx, epoch, len(loader), type='train', kinds='loss', viz=viz)
+        plot_2d_line(auc_val, idx, epoch, len(loader), type='train', kinds='auc', viz=viz)
         progbar.set_postfix({"Loss": "%0.4f"%avg['loss'](), "AUC Score": "%0.3f"%avg['auc']()})
         torch.cuda.empty_cache()
 
@@ -159,8 +118,8 @@ def evaluate(model, loader, loss_func, metrics, device, **kwargs):
         loss = loss_func(score_map, label)
         loss_val = loss.to('cpu').item()
         avg.update(loss=loss_val, auc=metrics(score_map.detach().cpu().numpy(), label.detach().cpu().numpy()))
-        plot_2d_line(avg['loss'](), idx, epoch, 'eval', 'loss')
-        plot_2d_line(avg['auc'](), idx, epoch, 'eval', 'auc')
+        plot_2d_line(avg['loss'](), idx, epoch, len(loader), 'eval', 'loss')
+        plot_2d_line(avg['auc'](), idx, epoch, len(loader), 'eval', 'auc')
         torch.cuda.empty_cache()
     return avg['loss'](), avg['auc']()
 
@@ -169,7 +128,7 @@ def main(args):
     param = Params(args.param_path)
     viz = visdom.Visdom(port=args.port)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up).to(device)
+    siamfc = SiameseNet(EMBEDDING_NET[param.model], param.corr, param.score_size, param.response_up).to(device)
     siamfc.apply(weight_init)
     upscale_factor = siamfc.final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,

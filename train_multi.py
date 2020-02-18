@@ -130,10 +130,10 @@ def main(args):
     device = 'cuda' if torch.cuda.is_available() and len(device_num) >= 1 else 'cpu'
     if len(device_num) >= 1:
         torch.cuda.set_device(device_num[0])
-    siamfc = SiameseNet(Baseline(), param.corr, param.score_size, param.response_up)
+    siamfc = SiameseNet(EMBEDDING_NET[param.model], param.corr, param.score_size, param.response_up)
     final_score_sz = siamfc.final_score_sz
     siamfc.apply(weight_init)
-    print("Using GPU is {0}\n and".format(device_num), device)
+    print("Using GPU is {0} and!".format(device_num), device)
     siamfc = nn.DataParallel(siamfc.to(device), device_ids=device_num).to(device)
     upscale_factor = final_score_sz / param.score_size
     dataset = ImageNetVID(args.root_dir,
@@ -168,8 +168,11 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, param.lr_decay)
     param.update_with_dict({'start': 0})
     if args.pre_trained !="":
-        siamfc, optim, scheduler = load_model(args.pre_trained, siamfc, optim, scheduler, param)
-        print("Training Resume\n")
+        try:
+            siamfc, optim, scheduler = load_model(args.pre_trained, siamfc, optim, scheduler, param)
+            print("Training Resume\n")
+        except AttributeError:
+            print("Fail to load trained model!")
     loss_func = BCELogit_Loss
     metrics = AUC
 

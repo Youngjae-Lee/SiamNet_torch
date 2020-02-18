@@ -52,9 +52,9 @@ class Baseline(nn.Module):
         return embedding
 
 
-class Model(nn.Module):
+class RCNNLayer(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super(RCNNLayer, self).__init__()
 
         ########## Conv1 ##########
         self.conv1_1 = nn.Sequential(
@@ -156,13 +156,6 @@ class Model(nn.Module):
 
         self.conv3_pooling = nn.AvgPool2d(4, 4)
         self.conv4_pooling = nn.AvgPool2d(2, 2)
-        # examplar_featrue_size = (self.examplar_size[0]/16, self.examplar_size[1]/16)
-        # cnadidate_feature_size = (self.candidate_size[0] / 16, self.candidate_size[1]/16)
-        #
-        # bias_size_h = (cnadidate_feature_size[0] -examplar_featrue_size[0]) + 1
-        # bias_size_w = (cnadidate_feature_size[1] -examplar_featrue_size[1]) + 1
-        #
-        # self.b1 = 0.1 * torch.ones((batch_size, int(bias_size_h), int(bias_size_w)), dtype=torch.float32, requires_grad=True).to(device=self.device)
 
     def forward(self, x):
         out = self.forward_sep(x)
@@ -224,8 +217,9 @@ def weight_init(model):
         zeros_(model.bias)
 
 
-FINAL_SIZE = {
-    "Baseline": 17
+EMBEDDING_NET = {
+    'Baseline': Baseline(),
+    'RCNNLayer': RCNNLayer()
 }
 
 import numpy as np
