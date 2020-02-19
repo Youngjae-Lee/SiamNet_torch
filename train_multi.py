@@ -61,14 +61,16 @@ def train_and_evaluate(model, train_loader, eval_loader, optim, loss_func, sched
         viz = None
 
     save_data = dict(model=model.state_dict(), optim=optim.state_dict(), scheduler=sched.state_dict(), epoch=0)
-    for epoch in tqdm(range(start, end), initial=start):
+    print("Start epoch {0}".format(start))
+    for epoch in tqdm(range(start, end)):
+        print("Current Epoch {0}".format(epoch))
         train(model, train_loader, optim, loss_func, metrics, epoch=epoch, device=device, viz=viz, display_step=params.display_step)
         sched.step()
         save_data.update(
             {"model": model.state_dict(),
             "optim": optim.state_dict(),
             "scheduler": sched.state_dict(),
-            "epoch": epoch}
+            "epoch": epoch+1}
         )
         save_model(path_to_save=params.ckpt_path, save_params=save_data)
         if eval_loader is not None:
@@ -171,7 +173,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optim, param.lr_decay)
     param.update_with_dict({'start': 0})
     if args.pre_trained !="":
-        siamfc, optim, scheduler = load_model(args.pre_trained, siamfc, optim, scheduler, param)
+        siamfc, optim, scheduler, param  = load_model(args.pre_trained, siamfc, optim, scheduler, param)
         print(siamfc, optim, scheduler)
         print("Training Resume\n")
     loss_func = BCELogit_Loss
@@ -183,6 +185,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    ''
     arg = parse_arguments()
     main(arg)

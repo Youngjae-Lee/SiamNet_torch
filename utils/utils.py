@@ -117,6 +117,7 @@ def check_imagenet_folder_tree(root_dir):
 
 def save_model(path_to_save, save_params):
     assert save_params is not None, "Running Parameter have to exist"
+    print("Save Model")
     curr_epoch = save_params.get("epoch")
     output_name = "{0:04d}".format(curr_epoch)
     model_output = output_name + ".pt"
@@ -136,9 +137,9 @@ def load_model(ckpt_path, model, optim, scheduler, param):
         model.load_state_dict(remove_moudule(dict['model']))
     scheduler.load_state_dict(dict['scheduler'])
     optim.load_state_dict(dict['optim'])
-    param.start_epoch = dict['epoch']
+    param.start = dict['epoch']
 
-    return model, optim, scheduler
+    return model, optim, scheduler, param
 
 
 def cosine_similarity(ref, srch, batchnorm=None):
